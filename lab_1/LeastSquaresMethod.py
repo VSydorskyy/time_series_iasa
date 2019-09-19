@@ -26,4 +26,4 @@ class LeastSquaresMethod(object):
                 X
             ], axis=1)
             
-        return X@self.coef_matrix
+        return np.squeeze(X@self.coef_matrix)

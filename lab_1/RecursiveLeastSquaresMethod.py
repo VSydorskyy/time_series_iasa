@@ -26,8 +26,15 @@ class RecursiveLeastSquaresMethod(object):
             x = np.concatenate([np.zeros(1), x], axis=0)
             
         x = np.expand_dims(x, axis=0)
-        return x@self.coef_matrix
+        return np.squeeze(x@self.coef_matrix)
     
     def predict_all(self, X, y):
-        y_pred = [self.fit_one(X[i,:], y[i]).predict(X[i,:]).squeeze() for i in range(X.shape[0])] 
-        return np.stack(y_pred)
+        coefs_mass = []
+        y_pred = []
+        
+        for i in range(X.shape[0]):
+            self.fit_one(X[i,:], y[i])
+            coefs_mass.append(self.coef_matrix.squeeze())
+            y_pred.append(self.predict(X[i,:]).squeeze())
+            
+        return np.stack(y_pred), np.stack(coefs_mass)
