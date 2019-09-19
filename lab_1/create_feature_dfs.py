@@ -25,7 +25,7 @@ def create_initial_input(a_coefs, b_coefs, time_series_shape=100, uniform_low=0,
     outs = list(manage[:len(a_coefs)-1] + np.random.normal(size=(len(a_coefs)-1), scale=noise_std))
     for i in range(len(a_coefs)-1,time_series_shape):
         outs.append(a_coefs[0] + sum(a_coefs[j]*outs[i-j] for j in range(1,len(a_coefs))) +\
-                    sum(b_coefs[j]*manage[i-j] for j in range(1,len(b_coefs))) + np.random.normal(size=(1), scale=noise_std)[0])
+                    sum(b_coefs[j]*manage[i-j] for j in range(1,len(b_coefs))) + np.random.normal(size=None, scale=noise_std))
         
     result['out_signals'] = outs
     result['manage_signals'] = list(manage)

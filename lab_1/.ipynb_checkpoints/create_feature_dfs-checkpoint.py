@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 def create_signal_df(signal_time_shift, signals, variable_name):
     signal_df = pd.DataFrame([signals[signal_time_shift:]] + \
@@ -12,3 +13,21 @@ def compose_signals_df(parsing_results):
     manage_signal_df = create_signal_df(signal_time_shift, parsing_results['manage_signals'], 'v')
     
     return pd.concat([out_signal_df, manage_signal_df.iloc[:out_signal_df.shape[0],:]],axis=1)
+
+
+def create_initial_input(a_coefs, b_coefs, time_series_shape=100, uniform_low=0, uniform_high=10, noise_std=1.):
+    result = dict()
+    
+    result['manage_weights'] = {i:a_coefs[i] for i in range(len(a_coefs))}
+    result['out_weights'] = {i:b_coefs[i] for i in range(len(b_coefs))}
+    
+    manage = np.random.uniform(low=uniform_low, high=uniform_high, size=(time_series_shape))
+    outs = list(manage[:len(a_coefs)-1] + np.random.normal(size=(len(a_coefs)-1), scale=noise_std))
+    for i in range(len(a_coefs)-1,time_series_shape):
+        outs.append(a_coefs[0] + sum(a_coefs[j]*outs[i-j] for j in range(1,len(a_coefs))) +\
+                    sum(b_coefs[j]*manage[i-j] for j in range(1,len(b_coefs))) + np.random.normal(size=None, scale=noise_std))
+        
+    result['out_signals'] = outs
+    result['manage_signals'] = list(manage)
+    
+    return result

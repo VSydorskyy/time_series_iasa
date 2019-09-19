@@ -19,6 +19,9 @@ def parse_weights(weights_str):
         else:
             raise ValueError('Unresolved signal')
             
+    manage_weights = {i:manage_weights.get(i,0.) for i in range(max(manage_weights.keys())+1)}
+    out_weights = {i:out_weights.get(i,0.) for i in range(max(out_weights.keys())+1)}
+            
     return manage_weights, out_weights
 
 def parse_signals(signal_str):
