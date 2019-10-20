@@ -1,4 +1,5 @@
 from os.path import join
+import pandas as pd
 
 def read_file(path):
     with open(path) as file:
@@ -45,3 +46,9 @@ def parse_file(path):
         'out_weights':out_weights,
         'out_signals':out_signals
     }
+
+def parse_file_only_outs(path):
+    signals = read_file(path)
+    signals = parse_signals(path)
+    
+    pd.DataFrame

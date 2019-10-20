@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 
+from parse_input_file import read_file, parse_signals
+
 def create_signal_df(signal_time_shift, signals, variable_name):
     signal_df = pd.DataFrame([signals[signal_time_shift:]] + \
                              [signals[i:-signal_time_shift+i] for i in reversed(range(signal_time_shift))]).transpose()
@@ -36,3 +38,12 @@ def create_initial_input(a_coefs, b_coefs, time_series_shape=100, uniform_low=0,
     result['manage_signals'] = list(manage)
     
     return result
+
+def create_df_only_outs(path):
+    signals = read_file(path)
+    signals = parse_signals(signals)
+    
+    return pd.DataFrame({
+        '''y(k)''':signals,
+        '''v(k)''':signals
+    })
