@@ -8,13 +8,16 @@ from PACF import PACF
 from utils import build_lagged_features, build_ma_on_lags
 
 class ARMA(object):
-    def __init__(self, ma_window_size=5, ma_type=None, ar_thresh_coef=0.3, ma_thresh_coef=0.2, max_coef_to_inspect=12, on_residuals=True):
+    def __init__(self, ma_window_size=5, ma_type=None, ar_thresh_coef=0.3, ma_thresh_coef=0.2, max_coef_to_inspect=12, on_residuals=True ,use_own_ma_coefs=False):
         self.ma_window_size = ma_window_size
         self.ma_type = ma_type
         self.ar_thresh_coef = ar_thresh_coef
         self.ma_thresh_coef = ma_thresh_coef
         self.max_coef_to_inspect = max_coef_to_inspect
+        if on_residuals and use_own_ma_coefs:
+            raise ValueError('on_residuals and use_own_ma_coefs can not be used together')
         self.on_residuals = on_residuals
+        self.use_own_ma_coefs = use_own_ma_coefs
         
         self.pacf_ar = None
         self.initial_lin_reg_coefs = None
@@ -73,11 +76,25 @@ class ARMA(object):
         ar_and_ma_df = pd.concat([lagged_ar_df.iloc[lagged_ar_df.shape[0] - lagged_ma_df.shape[0]:].reset_index(drop=True),
                                   lagged_ma_df.reset_index(drop=True)], axis=1)
         
-        lin_reg.fit(ar_and_ma_df.drop(columns=['lag_0','ma_lag_0']), time_s_m_ma_0)
+        if self.use_own_ma_coefs and amount_of_ma_coefs > 0:
+            ma_alpha = 2/((amount_of_ma_coefs+1)+1)
+            ma_weigts = np.array([(1-ma_alpha)**(j+1) for j in range(amount_of_ma_coefs)])
+            ma_weigts = ma_weigts / ma_weigts.sum()
+                
+            ma_part = ar_and_ma_df.iloc[:,-amount_of_ma_coefs:] @ ma_weigts
+                
+            new_y_lin_reg = LinearRegression()
+            new_y_lin_reg.fit(ar_and_ma_df.iloc[:,:-lagged_ma_df.shape[1]].drop(columns=['lag_0']), time_s_m_ma_0 - ma_part)
+                
+            lin_reg.coef_ = np.array(list(new_y_lin_reg.coef_) + list(ma_weigts))
+            lin_reg.intercept_ = new_y_lin_reg.intercept_   
+        else:
+            lin_reg.fit(ar_and_ma_df.drop(columns=['lag_0','ma_lag_0']), time_s_m_ma_0)
         
         if endogen is not None:
             self.arma_coefs = [lin_reg.intercept_] + list(lin_reg.coef_[:amount_of_ar_coefs*endogen.shape[1]]) + [1] + list(lin_reg.coef_[amount_of_ar_coefs*endogen.shape[1]:])
         else:
             self.arma_coefs = [lin_reg.intercept_] + list(lin_reg.coef_[:amount_of_ar_coefs]) + [1] + list(lin_reg.coef_[amount_of_ar_coefs:])
         
+      
         return lin_reg.predict(ar_and_ma_df.drop(columns=['lag_0','ma_lag_0'])) + lagged_ma_df['ma_lag_0'], ar_and_ma_df['lag_0']
